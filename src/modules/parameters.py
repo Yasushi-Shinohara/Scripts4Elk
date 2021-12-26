@@ -48,6 +48,9 @@ class ElkData:
         self.vkc = None
         self.pmat = None
         self.occ = None
+        self.Ne = None
+        self.spin_treatment = None
+        self.spin_degeneracy = None
 #
     def _read_KPOINTS(self, EFs, dir_path):
         file_KPOINTS = dir_path + '/' + EFs.KPOINTS
@@ -122,10 +125,19 @@ class ElkData:
             temp = lines[i].split(':')
             if (str(temp[0]) == 'k-point grid ') :
                 ngridk = temp[1].split()
-                print ('ngridk = ',ngridk)
+                print ('# ngridk = ',ngridk)
             elif (str(temp[0]) == 'k-point offset ') :
                 self.vkloff = temp[1].split()
-                print ('vkloff = ',self.vkloff)
+                print ('# vkloff = ',self.vkloff)
+            elif (str(temp[0]) == 'Total valence charge    ') :
+                self.Ne = float(temp[1])
+                print ('# Ne = ',self.Ne)
+            elif (str(temp[0]) == 'Spin treatment ') :
+                self.spin_treatment = str(lines[i+1]).strip()
+                if (self.spin_treatment.strip() == 'spin-unpolarised'):
+                    self.spin_degeneracy = 2
+                print('# Spin treatment: ', self.spin_treatment)
+                print('# Spin degeneracy: ', self.spin_degeneracy)
         Nk1 = int(ngridk[0])
         Nk2 = int(ngridk[1])
         Nk3 = int(ngridk[2])

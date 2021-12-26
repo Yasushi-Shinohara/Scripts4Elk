@@ -25,5 +25,11 @@ elif (argc == 3):
 #ED._read_INFO(EFs, dir_path)
 #ED._read_EIGVAL(EFs, dir_path)
 ED.get_eigval(EFs, dir_path)
+
 #ED._read_PMAT(EFs, dir_path, elk_ver)
-ED.get_eigval_pmat(EFs, dir_path, elk_ver)
+#ED.get_eigval_pmat(EFs, dir_path, elk_ver)
+
+from modules.generate_DoS import GenerateDoS
+
+#GDoS = GenerateDoS()
+omega, DoS, NoS = GenerateDoS.generate(ED)
