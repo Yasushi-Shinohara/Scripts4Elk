@@ -33,3 +33,8 @@ from modules.generate_DoS import GenerateDoS
 
 #GDoS = GenerateDoS()
 omega, DoS, NoS, occDoS, occNoS = GenerateDoS.generate(ED)
+
+ED.get_eigval_pmat(EFs, dir_path, elk_ver)
+from modules.generate_sigma_epsilon import GenerateSigmaEpsilon
+omega, sigma, epsilon = GenerateSigmaEpsilon.generate(ED)
+
