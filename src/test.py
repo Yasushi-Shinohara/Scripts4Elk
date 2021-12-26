@@ -32,4 +32,4 @@ ED.get_eigval(EFs, dir_path)
 from modules.generate_DoS import GenerateDoS
 
 #GDoS = GenerateDoS()
-omega, DoS, NoS = GenerateDoS.generate(ED)
+omega, DoS, NoS, occDoS, occNoS = GenerateDoS.generate(ED)

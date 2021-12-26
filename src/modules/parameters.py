@@ -167,11 +167,13 @@ class ElkData:
         self.Nb = int(temp[0])
         print ('Nb =', self.Nb)
         self.eigval = np.zeros([self.Nb,self.Nk])
+        self.occ = np.zeros([self.Nb,self.Nk])
         for ik in range(self.Nk):
             for ib in range(self.Nb):
                 i = ik*(self.Nb+4) + ib+5
                 temp = lines[i].split()
                 self.eigval[ib,ik] = float(temp[1])
+                self.occ[ib,ik] = float(temp[2])
 #
     def get_eigval(self, EFs, dir_path):
         self._read_KPOINTS(EFs, dir_path)
