@@ -36,5 +36,5 @@ omega, DoS, NoS, occDoS, occNoS = GenerateDoS.generate(ED)
 
 ED.get_eigval_pmat(EFs, dir_path, elk_ver)
 from modules.generate_sigma_epsilon import GenerateSigmaEpsilon
-omega, sigma, epsilon = GenerateSigmaEpsilon.generate(ED)
+omega, sigma, epsilon = GenerateSigmaEpsilon.generate(ED, ewidth = 0.005)
 
