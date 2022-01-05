@@ -16,7 +16,7 @@ class GenerateSigmaEpsilon:
         self.omega_plasma = None #The plasma frequency
 
     @classmethod
-    def generate(self, ED, Nene = 2000, ewidth = 0.01, plot_option = True):
+    def generate(self, ED, Nene = 2000, ewidth = 0.001, plot_option = True):
         emax = 1.2*(np.amax(ED.eigval) - np.amin(ED.eigval))
         emin = -1.0*emax
         self.omega = np.linspace(emin, emax, Nene)
@@ -26,7 +26,7 @@ class GenerateSigmaEpsilon:
         print('# Following is progress of GenerateSigmaEpsilon.generate function. ')
         for ik in range(ED.Nk):
             if (ik%Nevery ==0):
-                print('# '+str(np.round(ik/ED.Nk, decimals = 2)*100.0)+' % is done.')
+                print('# '+str(np.round(ik/ED.Nk*100.0, decimals = 2))+' % is done.')
             for ib in range(ED.Nb):
                 for jb in range(ED.Nb):
                     if (ib != jb):
