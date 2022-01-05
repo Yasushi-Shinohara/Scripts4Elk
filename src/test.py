@@ -38,13 +38,18 @@ from modules.change_occ import ChangeOccupation
 
 ChangeOccupation.get_EVTECB(ED)
 T = 5.0e-2
-ChangeOccupation.single_temperature(ED, T)
+#ChangeOccupation.single_temperature(ED, T)
+Np = 0.4121255861054197
+Np = 2.0*Np
+Tp = 1.0*T/10.0
+Th = 1.0*T/10.0
+ChangeOccupation.double_temperature(ED, Np, Tp, Th)
 
 omega, DoS, NoS, occDoS, occNoS = GenerateDoS.generate(ED)
 
 #
 from modules.generate_sigma_epsilon import GenerateSigmaEpsilon
 
-#omega, sigma, epsilon, epsilon_inv = GenerateSigmaEpsilon.generate(ED, ewidth = 0.002)
-#sum_epsilon, sum_epsilon_inv, omega_plasma = GenerateSigmaEpsilon.check_sum(ED)
+omega, sigma, epsilon, epsilon_inv = GenerateSigmaEpsilon.generate(ED, ewidth = 0.005)
+sum_epsilon, sum_epsilon_inv, omega_plasma = GenerateSigmaEpsilon.check_sum(ED)
 

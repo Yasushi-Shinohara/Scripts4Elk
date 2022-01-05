@@ -71,22 +71,96 @@ class ChangeOccupation:
         else:
             print('# The iteration is converged properly.')
             print('# ====================================')
-        Nh = np.sum(occ[:self.nVT,:])/ED.Nk
-        Np = np.sum(occ[self.nCB-1:,:])/ED.Nk
+        Nv = np.sum(occ[:self.nVT,:])/ED.Nk
+        Nc = np.sum(occ[self.nCB-1:,:])/ED.Nk
         print('# The fundamental gap', (self.ECB - self.EVT), '[a.u.] =',(self.ECB - self.EVT)*Hartree, '[eV] .')
         print('# The temperature', self.T, '[a.u.] =',self.T*Hartree, '[eV] .')
         print('# The chimical potential', self.mu, '[a.u.] =',self.mu*Hartree, '[eV] .')
-        print('# Number of thermally excited particle in the conduction band:', Np)
+        print('# Number of thermally excited electron in the conduction band:', Nc)
         ED.occ = occ
 
 #
     @classmethod
-    def double_temperature(self, ED, Np, Tp, Th, plot_option = True):
-        self.Np = 1*Np
+    def double_temperature(self, ED, Np_in, Tp, Th, plot_option = True, Ne_epsilon = 1.0e-8, Nitermax = 200):
+        exp_maxvalue = 1.0e2 #Maximum value for exponential argument
+        self.Np = 1*Np_in
         self.Nh = self.Np
         self.Tp = 1.0*Tp
         self.betap = 1.0/self.Tp
         self.Th = 1.0*Th
         self.betah = 1.0/self.Th
+        #Particle
+        mumin = np.amin(ED.eigval)
+        mumax = np.amax(ED.eigval)
+        self.mup = 0.5*(mumin + mumax)
+        print('# Initial chemical potential for particle: ',self.mup)
+        temp = self.betap*(ED.eigval[:,:] - self.mup)
+        temp = np.clip(temp, None, exp_maxvalue)
+        occp = np.exp(temp) + 1.0
+        occp = np.float(ED.spin_degeneracy)/occp
+        Np = np.sum(occp[self.nCB-1:,:])/ED.Nk
+        print('# Initial number of particle',Np)
+        print('# Iteration to find proper chemical potentials starts...')
+        print('# ncounter, chemical potential, Np, expected Np ')
+        ncounter = 0
+        while (np.abs(Np - self.Np) > Ne_epsilon):
+            ncounter += 1
+            if (Np < self.Np):
+                mumin = self.mup
+            else:
+                mumax = self.mup 
+            self.mup = 0.5*(mumin + mumax)
+            temp = np.clip(self.betap*(ED.eigval[:,:] - self.mup), None, exp_maxvalue)
+            occp = np.float(ED.spin_degeneracy)/(np.exp(temp) + 1.0)
+            Np = np.sum(occp[self.nCB-1:,:])/ED.Nk
+            print('# ',ncounter, self.mup, Np, self.Np)
+            if (ncounter == Nitermax):
+                print('# The iteration is NOT converged in ',ncounter,' iterations.')
+                break
+        else:
+            print('# The iteration is converged properly.')
+            print('# ====================================')
+        Np = np.sum(occp[self.nCB-1:,:])/ED.Nk
+        #Hole
+        mumin = np.amin(ED.eigval)
+        mumax = np.amax(ED.eigval)
+        self.muh = 0.5*(mumin + mumax)
+        print('# Initial chemical potential for particle: ',self.muh)
+        temp = self.betap*(ED.eigval[:,:] - self.muh)
+        temp = np.clip(temp, None, exp_maxvalue)
+        occh = np.exp(temp) + 1.0
+        occh = np.float(ED.spin_degeneracy)/occh
+        Nh = ED.Ne - np.sum(occh[:self.nVT,:])/ED.Nk
+        print('# Initial number of hole',Nh)
+        print('# Iteration to find proper chemical potentials starts...')
+        print('# ncounter, chemical potential, Nh, expected Nh ')
+        ncounter = 0
+        while (np.abs(Nh - self.Nh) > Ne_epsilon):
+            ncounter += 1
+            if (Nh > self.Nh):
+                mumin = self.muh
+            else:
+                mumax = self.muh 
+            self.muh = 0.5*(mumin + mumax)
+            temp = np.clip(self.betah*(ED.eigval[:,:] - self.muh), None, exp_maxvalue)
+            occh = np.float(ED.spin_degeneracy)/(np.exp(temp) + 1.0)
+            Nh = ED.Ne - np.sum(occh[:self.nVT,:])/ED.Nk
+            print('# ',ncounter, self.muh, Nh, self.Nh)
+            if (ncounter == Nitermax):
+                print('# The iteration is NOT converged in ',ncounter,' iterations.')
+                break
+        else:
+            print('# The iteration is converged properly.')
+            print('# ====================================')
+        Nh = ED.Ne - np.sum(occh[:self.nVT,:])/ED.Nk
+        print('# The fundamental gap', (self.ECB - self.EVT), '[a.u.] =',(self.ECB - self.EVT)*Hartree, '[eV] .')
+        print('# The particle temperature', self.Tp, '[a.u.] =',self.Tp*Hartree, '[eV] .')
+        print('# The particle chimical potential', self.mup, '[a.u.] =',self.mup*Hartree, '[eV] .')
+        print('# Number of particle :', Np)
+        print('# The hole temperature', self.Th, '[a.u.] =',self.Th*Hartree, '[eV] .')
+        print('# The hole chimical potential', self.muh, '[a.u.] =',self.muh*Hartree, '[eV] .')
+        print('# Number of hole :', Nh)
+        ED.occ[self.nCB-1:,:] = occp[self.nCB-1:,:]
+        ED.occ[:self.nVT,:] = occh[:self.nVT,:]
 
     
