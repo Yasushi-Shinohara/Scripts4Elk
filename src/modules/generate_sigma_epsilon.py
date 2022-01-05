@@ -91,7 +91,7 @@ class GenerateSigmaEpsilon:
         h = 4.135667696e-15          #eV s, The Planck constatnt
         eledensity = np.sum(ED.occ)/ED.Nk/(ED.vcell*Atomvolume)*1.0e27 #/m^3
         self.omega_plasma = np.sqrt((eledensity*ee**2)/(me*epsilon0)) #/s
-        self.omega_plasma = omega_plasma*hbar/Hartree #Hartree
+        self.omega_plasma = self.omega_plasma*hbar/Hartree #Hartree
         print(self.sum_epsilon[0,0],0.5*pi*omega_plasma**2)
         print(self.sum_epsilon_inv[0,0],0.5*pi*omega_plasma**2)
         return self.sum_epsilon, self.sum_epsilon_inv, self.omega_plasma
