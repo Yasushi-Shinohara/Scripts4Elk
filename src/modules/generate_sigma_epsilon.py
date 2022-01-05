@@ -92,6 +92,6 @@ class GenerateSigmaEpsilon:
         eledensity = np.sum(ED.occ)/ED.Nk/(ED.vcell*Atomvolume)*1.0e27 #/m^3
         self.omega_plasma = np.sqrt((eledensity*ee**2)/(me*epsilon0)) #/s
         self.omega_plasma = self.omega_plasma*hbar/Hartree #Hartree
-        print(self.sum_epsilon[0,0],0.5*pi*omega_plasma**2)
-        print(self.sum_epsilon_inv[0,0],0.5*pi*omega_plasma**2)
+        print(self.sum_epsilon[0,0],0.5*pi*self.omega_plasma**2)
+        print(self.sum_epsilon_inv[0,0],0.5*pi*self.omega_plasma**2)
         return self.sum_epsilon, self.sum_epsilon_inv, self.omega_plasma
