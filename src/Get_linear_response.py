@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # coding: UTF-8
-# This is created 2021/12/24 by Y. Shinohara
+# This is created 2022/01/05 by Y. Shinohara
 import sys
 from modules.constants import *
 from modules.parameters import ElkFiles, ElkData
@@ -20,23 +20,9 @@ elif (argc == 3):
     elk_ver = int(argv[2])
     print('# Elk version is "'+str(elk_ver)+'".')
 
-#ED._read_KPOINTS(EFs, dir_path)
-#ED._read_LATTICE(EFs, dir_path)
-#ED._read_INFO(EFs, dir_path)
-#ED._read_EIGVAL(EFs, dir_path)
-ED.get_eigval(EFs, dir_path)
-
-#ED._read_PMAT(EFs, dir_path, elk_ver)
-#ED.get_eigval_pmat(EFs, dir_path, elk_ver)
-
-from modules.generate_DoS import GenerateDoS
-
-#GDoS = GenerateDoS()
-omega, DoS, NoS, occDoS, occNoS = GenerateDoS.generate(ED)
-
 ED.get_eigval_pmat(EFs, dir_path, elk_ver)
+
 from modules.generate_sigma_epsilon import GenerateSigmaEpsilon
 omega, sigma, epsilon, epsilon_inv = GenerateSigmaEpsilon.generate(ED, ewidth = 0.002)
-
 sum_epsilon, sum_epsilon_inv, omega_plasma = GenerateSigmaEpsilon.check_sum(ED)
 
