@@ -51,5 +51,6 @@ omega, DoS, NoS, occDoS, occNoS = GenerateDoS.generate(ED)
 from modules.generate_sigma_epsilon import GenerateSigmaEpsilon
 
 omega, sigma, epsilon, epsilon_inv = GenerateSigmaEpsilon.generate(ED, ewidth = 0.005)
+#omega_org, sigma_org, epsilon_org, epsilon_inv_org = GenerateSigmaEpsilon.generate_org(ED, ewidth = 0.005)
 sum_epsilon, sum_epsilon_inv, omega_plasma = GenerateSigmaEpsilon.check_sum(ED)
 

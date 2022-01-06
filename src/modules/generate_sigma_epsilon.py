@@ -4,6 +4,7 @@
 import sys
 from modules.constants import pi, fpi, zI, Hartree, Atomvolume
 import numpy as np
+import time
 
 class GenerateSigmaEpsilon:
     def __init__(self):
@@ -17,16 +18,79 @@ class GenerateSigmaEpsilon:
 
     @classmethod
     def generate(self, ED, Nene = 2000, ewidth = 0.001, plot_option = True):
+        ts = time.time()
         emax = 1.2*(np.amax(ED.eigval) - np.amin(ED.eigval))
         emin = -1.0*emax
         self.omega = np.linspace(emin, emax, Nene)
-        print(emin, emax, self.omega)
+        print('# emin, emax =',emin, emax)
         self.sigma = np.zeros([Nene, 3, 3], dtype='complex128')
         Nevery = int(ED.Nk/10.0)
         print('# Following is progress of GenerateSigmaEpsilon.generate function. ')
         for ik in range(ED.Nk):
             if (ik%Nevery ==0):
+                te = time.time()
                 print('# '+str(np.round(ik/ED.Nk*100.0, decimals = 2))+' % is done.')
+                print('# ', te-ts, 'sec')
+            for ib in range(ED.Nb):
+                for jb in range(ib):
+                    weight1 = (ED.occ[ib,ik] - ED.occ[jb,ik]) \
+                        /(self.omega[:] - (ED.eigval[jb,ik] - ED.eigval[ib,ik]) + zI*ewidth) \
+                        /(ED.eigval[jb,ik] - ED.eigval[ib,ik])
+                    weight2 = (ED.occ[jb,ik] - ED.occ[ib,ik]) \
+                        /(self.omega[:] - (ED.eigval[ib,ik] - ED.eigval[jb,ik]) + zI*ewidth) \
+                        /(ED.eigval[ib,ik] - ED.eigval[jb,ik])
+                    for ixyz in range(3):
+                        for jxyz in range(3):
+                            moment1 = ED.pmat[ixyz,ib,jb,ik]*ED.pmat[jxyz,jb,ib,ik]
+                            moment2 = ED.pmat[ixyz,jb,ib,ik]*ED.pmat[jxyz,ib,jb,ik]
+                            self.sigma[:,ixyz,jxyz] = self.sigma[:,ixyz,jxyz] + moment1*weight1 + moment2*weight2
+        self.sigma = self.sigma*zI/ED.vcell/ED.Nk
+        #Constructing epsilon from sigma
+        self.epsilon = np.zeros([Nene, 3, 3], dtype='complex128')
+        for ixyz in range(3):
+            for jxyz in range(3):
+                self.epsilon[:,ixyz,jxyz] = self.sigma[:,ixyz,jxyz]*fpi*zI/self.omega
+        for ixyz in range(3):
+            self.epsilon[:,ixyz,ixyz] = np.ones(Nene, dtype='complex128') + self.epsilon[:,ixyz,ixyz]
+        self.epsilon_inv = 1.0/self.epsilon  
+        print('# Number of energy grid: Nene =', Nene)
+        print('# Energy width for sigma-epsilon: ewidth =', ewidth, '[a.u.] =', ewidth*Hartree, '[eV]')
+        print('# Energy minimum and maximum for DoS: emin, emax =', emin, emax, '[a.u.] =', emin*Hartree, emax*Hartree, '[eV]')
+#        print('# Number of integrad DoS:', self.NoS[NDoS-1])
+        if (plot_option):
+            import matplotlib.pyplot as plt
+            plt.figure()
+            plt.title('Optical conductivity')
+            plt.plot(self.omega, np.real(self.sigma[:,0,0]), label='Real part')
+            plt.plot(self.omega, np.imag(self.sigma[:,0,0]), label='Imaginary part')
+            plt.grid()
+            plt.legend()
+            plt.show()
+            #
+            plt.figure()
+            plt.title('Dielectrc function')
+            plt.plot(self.omega, np.real(self.epsilon[:,0,0]), label='Real part')
+            plt.plot(self.omega, np.imag(self.epsilon[:,0,0]), label='Imaginary part')
+            plt.grid()
+            plt.legend()
+            plt.show()
+        return self.omega, self.sigma, self.epsilon, self.epsilon_inv
+
+    @classmethod
+    def generate_org(self, ED, Nene = 2000, ewidth = 0.001, plot_option = True):
+        ts = time.time()
+        emax = 1.2*(np.amax(ED.eigval) - np.amin(ED.eigval))
+        emin = -1.0*emax
+        self.omega = np.linspace(emin, emax, Nene)
+        print('# emin, emax =',emin, emax)
+        self.sigma = np.zeros([Nene, 3, 3], dtype='complex128')
+        Nevery = int(ED.Nk/10.0)
+        print('# Following is progress of GenerateSigmaEpsilon.generate function. ')
+        for ik in range(ED.Nk):
+            if (ik%Nevery ==0):
+                te = time.time()
+                print('# '+str(np.round(ik/ED.Nk*100.0, decimals = 2))+' % is done.')
+                print('# ', te-ts, 'sec')
             for ib in range(ED.Nb):
                 for jb in range(ED.Nb):
                     if (ib != jb):
