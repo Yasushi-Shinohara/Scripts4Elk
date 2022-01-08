@@ -40,9 +40,12 @@ ChangeOccupation.get_EVTECB(ED)
 T = 5.0e-2
 #ChangeOccupation.single_temperature(ED, T)
 Np = 0.4121255861054197
-Np = 2.0*Np
-Tp = 1.0*T/10.0
-Th = 1.0*T/10.0
+#Np = 2.0*Np
+#Np = 0.005
+Tp = 1.0*T
+Th = 1.0*T
+#Tp = 0.001
+#Th = 0.001
 ChangeOccupation.double_temperature(ED, Np, Tp, Th)
 
 omega, DoS, NoS, occDoS, occNoS = GenerateDoS.generate(ED)
@@ -50,7 +53,8 @@ omega, DoS, NoS, occDoS, occNoS = GenerateDoS.generate(ED)
 #
 from modules.generate_sigma_epsilon import GenerateSigmaEpsilon
 
-omega, sigma, epsilon, epsilon_inv = GenerateSigmaEpsilon.generate(ED, ewidth = 0.005)
-#omega_org, sigma_org, epsilon_org, epsilon_inv_org = GenerateSigmaEpsilon.generate_org(ED, ewidth = 0.005)
+omega, sigma, epsilon, epsilon_inv = GenerateSigmaEpsilon.generate(ED, ewidth = 0.0005)
+omega_ver2, sigma_ver2, epsilon_ver2, epsilon_inv_ver2 = GenerateSigmaEpsilon.generate(ED, ewidth = 0.0005, algorithm_option = 'ver2')
+omega_org, sigma_org, epsilon_org, epsilon_inv_org = GenerateSigmaEpsilon.generate(ED, ewidth = 0.0005, algorithm_option = 'org')
 sum_epsilon, sum_epsilon_inv, omega_plasma = GenerateSigmaEpsilon.check_sum(ED)
 
