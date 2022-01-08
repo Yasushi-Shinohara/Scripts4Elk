@@ -18,129 +18,6 @@ class GenerateSigmaEpsilon:
         self.sum_epsilon_inv = None
         self.omega_plasma = None #The plasma frequency
 
-    @classmethod
-    def generate(self, ED, Nene = 2000, ewidth = 0.001, plot_option = True):
-        ts = time.time()
-        emax = 1.2*(np.amax(ED.eigval) - np.amin(ED.eigval))
-        emin = -1.0*emax
-        self.omega = np.linspace(emin, emax, Nene)
-        print('# emin, emax =',emin, emax)
-        self.sigma = np.zeros([Nene, 3, 3], dtype='complex128')
-        Nevery = int(Nene/10.0)
-        print('# Following is progress of GenerateSigmaEpsilon.generate function. ')
-        deigvalbk = np.zeros([ED.Nb, ED.Nb, ED.Nk], dtype='float64')
-        doccbk = np.zeros([ED.Nb, ED.Nb, ED.Nk], dtype='float64')
-        weightbk0 = np.zeros([ED.Nb, ED.Nb, ED.Nk], dtype='complex128')
-        for ik in range(ED.Nk):
-            for ib in range(ED.Nb):
-                for jb in range(ED.Nb):
-                    deigvalbk[ib,jb,ik] = ED.eigval[ib,ik] - ED.eigval[jb,ik]
-                    doccbk[ib,jb,ik] = ED.occ[ib,ik] - ED.occ[jb,ik]
-                    if (ib != jb):
-                        weightbk0[ib,jb,ik] = -doccbk[ib,jb,ik]/deigvalbk[ib,jb,ik]
-        te = time.time()
-        print('# preparation of deigvalbk arrays is done.')
-        print('# ', te-ts, 'sec')
-        for i in range(Nene):
-            if (i%Nevery == 0):
-                te = time.time()
-                print('# '+str(np.round(i/Nene*100.0, decimals = 2))+' % is done.')
-                print('# ', te-ts, 'sec')
-            for ixyz in range(3):
-                for jxyz in range(3):
-                    A = ED.pmat[ixyz,:,:,:]*np.transpose(ED.pmat[jxyz,:,:,:], (1,0,2))*weightbk0[:,:,:]/(self.omega[i] + deigvalbk[:,:,:] + zI*ewidth)
-                    self.sigma[i,ixyz,jxyz] = np.sum(A)
-        self.sigma = self.sigma*zI/ED.vcell/ED.Nk
-        #Constructing epsilon from sigma
-        self.epsilon = np.zeros([Nene, 3, 3], dtype='complex128')
-        for ixyz in range(3):
-            for jxyz in range(3):
-                self.epsilon[:,ixyz,jxyz] = self.sigma[:,ixyz,jxyz]*fpi*zI/self.omega
-        for ixyz in range(3):
-            self.epsilon[:,ixyz,ixyz] = np.ones(Nene, dtype='complex128') + self.epsilon[:,ixyz,ixyz]
-        self.epsilon_inv = 1.0/self.epsilon  
-        print('# Number of energy grid: Nene =', Nene)
-        print('# Energy width for sigma-epsilon: ewidth =', ewidth, '[a.u.] =', ewidth*Hartree, '[eV]')
-        print('# Energy minimum and maximum for DoS: emin, emax =', emin, emax, '[a.u.] =', emin*Hartree, emax*Hartree, '[eV]')
-#        print('# Number of integrad DoS:', self.NoS[NDoS-1])
-        if (plot_option):
-            import matplotlib.pyplot as plt
-            plt.figure()
-            plt.title('Optical conductivity')
-            plt.plot(self.omega, np.real(self.sigma[:,0,0]), label='Real part')
-            plt.plot(self.omega, np.imag(self.sigma[:,0,0]), label='Imaginary part')
-            plt.grid()
-            plt.legend()
-            plt.show()
-            #
-            plt.figure()
-            plt.title('Dielectrc function')
-            plt.plot(self.omega, np.real(self.epsilon[:,0,0]), label='Real part')
-            plt.plot(self.omega, np.imag(self.epsilon[:,0,0]), label='Imaginary part')
-            plt.grid()
-            plt.legend()
-            plt.show()
-        return self.omega, self.sigma, self.epsilon, self.epsilon_inv
-
-    @classmethod
-    def generate_ver2(self, ED, Nene = 2000, ewidth = 0.001, plot_option = True):
-        ts = time.time()
-        emax = 1.2*(np.amax(ED.eigval) - np.amin(ED.eigval))
-        emin = -1.0*emax
-        self.omega = np.linspace(emin, emax, Nene)
-        print('# emin, emax =',emin, emax)
-        self.sigma = np.zeros([Nene, 3, 3], dtype='complex128')
-        Nevery = int(ED.Nk/10.0)
-        print('# Following is progress of GenerateSigmaEpsilon.generate function. ')
-        for ik in range(ED.Nk):
-            if (ik%Nevery ==0):
-                te = time.time()
-                print('# '+str(np.round(ik/ED.Nk*100.0, decimals = 2))+' % is done.')
-                print('# ', te-ts, 'sec')
-            for ib in range(ED.Nb):
-                for jb in range(ib):
-                    weight1 = (ED.occ[ib,ik] - ED.occ[jb,ik]) \
-                        /(self.omega[:] - (ED.eigval[jb,ik] - ED.eigval[ib,ik]) + zI*ewidth) \
-                        /(ED.eigval[jb,ik] - ED.eigval[ib,ik])
-                    weight2 = (ED.occ[jb,ik] - ED.occ[ib,ik]) \
-                        /(self.omega[:] - (ED.eigval[ib,ik] - ED.eigval[jb,ik]) + zI*ewidth) \
-                        /(ED.eigval[ib,ik] - ED.eigval[jb,ik])
-                    for ixyz in range(3):
-                        for jxyz in range(3):
-                            moment1 = ED.pmat[ixyz,ib,jb,ik]*ED.pmat[jxyz,jb,ib,ik]
-                            moment2 = ED.pmat[ixyz,jb,ib,ik]*ED.pmat[jxyz,ib,jb,ik]
-                            self.sigma[:,ixyz,jxyz] = self.sigma[:,ixyz,jxyz] + moment1*weight1 + moment2*weight2
-        self.sigma = self.sigma*zI/ED.vcell/ED.Nk
-        #Constructing epsilon from sigma
-        self.epsilon = np.zeros([Nene, 3, 3], dtype='complex128')
-        for ixyz in range(3):
-            for jxyz in range(3):
-                self.epsilon[:,ixyz,jxyz] = self.sigma[:,ixyz,jxyz]*fpi*zI/self.omega
-        for ixyz in range(3):
-            self.epsilon[:,ixyz,ixyz] = np.ones(Nene, dtype='complex128') + self.epsilon[:,ixyz,ixyz]
-        self.epsilon_inv = 1.0/self.epsilon  
-        print('# Number of energy grid: Nene =', Nene)
-        print('# Energy width for sigma-epsilon: ewidth =', ewidth, '[a.u.] =', ewidth*Hartree, '[eV]')
-        print('# Energy minimum and maximum for DoS: emin, emax =', emin, emax, '[a.u.] =', emin*Hartree, emax*Hartree, '[eV]')
-#        print('# Number of integrad DoS:', self.NoS[NDoS-1])
-        if (plot_option):
-            import matplotlib.pyplot as plt
-            plt.figure()
-            plt.title('Optical conductivity')
-            plt.plot(self.omega, np.real(self.sigma[:,0,0]), label='Real part')
-            plt.plot(self.omega, np.imag(self.sigma[:,0,0]), label='Imaginary part')
-            plt.grid()
-            plt.legend()
-            plt.show()
-            #
-            plt.figure()
-            plt.title('Dielectrc function')
-            plt.plot(self.omega, np.real(self.epsilon[:,0,0]), label='Real part')
-            plt.plot(self.omega, np.imag(self.epsilon[:,0,0]), label='Imaginary part')
-            plt.grid()
-            plt.legend()
-            plt.show()
-        return self.omega, self.sigma, self.epsilon, self.epsilon_inv
 
     @classmethod
     def generate(self, ED, Nene = 2000, ewidth = 0.001, plot_option = True, algorithm_option = 'ver1'):
@@ -154,7 +31,7 @@ class GenerateSigmaEpsilon:
         #
         print('# ',algorithm_option, 'is chosen as algorithm_option.')
         if (algorithm_option == 'org'):
-            self._compute_sigma_Org(self, ED)
+            self._compute_sigma_orginal(self, ED)
         elif (algorithm_option == 'ver1'):
             self._compute_sigma_ver1(self, ED)
         elif (algorithm_option == 'ver2'):
@@ -222,7 +99,8 @@ class GenerateSigmaEpsilon:
         print(self.sum_epsilon_inv[0,0],0.5*pi*self.omega_plasma**2)
         return self.sum_epsilon, self.sum_epsilon_inv, self.omega_plasma
 
-    def _compute_sigma_Org(self, ED):
+    def _compute_sigma_orginal(self, ED):
+    #Trivial implementation based on the formula without any trick
         ts = time.time()
         Nevery = int(ED.Nk/10.0)
         print('# Following is progress of GenerateSigmaEpsilon.generate function. ')
@@ -243,6 +121,7 @@ class GenerateSigmaEpsilon:
                                 self.sigma[:,ixyz,jxyz] = self.sigma[:,ixyz,jxyz] + docc*moment/ene_denominator[:]
 #
     def _compute_sigma_ver1(self, ED):
+    #Reduction of orbital sum by thinking of index exchange
         ts = time.time()
         Nevery = int(ED.Nk/10.0)
         print('# Following is progress of GenerateSigmaEpsilon.generate function. ')
@@ -266,6 +145,7 @@ class GenerateSigmaEpsilon:
                             self.sigma[:,ixyz,jxyz] = self.sigma[:,ixyz,jxyz] + moment1*weight1 + moment2*weight2
 #
     def _compute_sigma_ver2(self, ED):
+    #Using vector-operation as much as possible, but slow
         ts = time.time()
         Nevery = int(self.Nene/10.0)
         print('# Following is progress of GenerateSigmaEpsilon.generate function. ')
