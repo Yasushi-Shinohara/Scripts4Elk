@@ -73,7 +73,7 @@ class GenerateSigmaEpsilon:
         return self.omega, self.sigma, self.epsilon, self.epsilon_inv
 
     @classmethod
-    def check_sum(self, ED, plot_option = True):
+    def check_sum(self, ED, plot_option = True, SI_CGS = 'CGS'):
         omegamin = np.sqrt(np.amin(self.omega**2))
         Nzero = np.argmin((self.omega - omegamin)**2)
         omega = self.omega[Nzero:]
@@ -86,17 +86,27 @@ class GenerateSigmaEpsilon:
             for jxyz in range(3):
                 self.sum_epsilon[ixyz,jxyz] = np.sum(omega[:]*np.imag(epsilon[:,ixyz,jxyz]))*domega
                 self.sum_epsilon_inv[ixyz,jxyz] = -np.sum(omega[:]*np.imag(epsilon_inv[:,ixyz,jxyz]))*domega
-        #SI value for the plasma freq. calculaiton
-        epsilon0 = 8.8541878128e-12  #F/m, The vacuum permitivity
-        me = 9.1093837015e-31        #kg, The electron mass
-        ee = 1.602176634e-19         #C, The elementary charge
-        hbar = 6.582119569e-16       #eV s, The Dirac constant
-        h = 4.135667696e-15          #eV s, The Planck constatnt
-        eledensity = np.sum(ED.occ)/ED.Nk/(ED.vcell*Atomvolume)*1.0e27 #/m^3
-        self.omega_plasma = np.sqrt((eledensity*ee**2)/(me*epsilon0)) #/s
-        self.omega_plasma = self.omega_plasma*hbar/Hartree #Hartree
-        print(self.sum_epsilon[0,0],0.5*pi*self.omega_plasma**2)
-        print(self.sum_epsilon_inv[0,0],0.5*pi*self.omega_plasma**2)
+        if (SI_CGS == 'SI'):
+            #SI value for the plasma freq. calculaiton
+            epsilon0 = 8.8541878128e-12  #F/m, The vacuum permitivity
+            me = 9.1093837015e-31        #kg, The electron mass
+            ee = 1.602176634e-19         #C, The elementary charge
+            hbar = 6.582119569e-16       #eV s, The Dirac constant
+            h = 4.135667696e-15          #eV s, The Planck constatnt
+            eledensity = np.sum(ED.occ)/ED.Nk/(ED.vcell*Atomvolume)*1.0e27 #/m^3
+            self.omega_plasma = np.sqrt((eledensity*ee**2)/(me*epsilon0)) #/s
+            self.omega_plasma = self.omega_plasma*hbar/Hartree #Hartree
+        elif (SI_CGS == 'CGS'):
+            #With the CGS, plasma_freq = sqrt(4.0*pi*Nele/Volume)
+            eledensity = np.sum(ED.occ)/ED.Nk/ED.vcell #Atomic unit
+            self.omega_plasma = np.sqrt(fpi*eledensity) #Atomic unit
+        else :
+            print('# ERROR: No avilable option for SI_CGS with ', SI_CGS)
+            sys.exit()
+        print('# ', SI_CGS, 'way to evaluate plasma frequency is chosen.')
+        print('# The conductivity sum rule: ',self.sum_epsilon[0,0])
+        print('# The longtudinal f-sum rule',self.sum_epsilon_inv[0,0])
+        print('# The sum should be ',0.5*pi*self.omega_plasma**2)
         return self.sum_epsilon, self.sum_epsilon_inv, self.omega_plasma
 
     def _compute_sigma_orginal(self, ED):
