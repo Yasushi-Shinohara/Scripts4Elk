@@ -2,9 +2,11 @@
 # This is created 2021/12/27 by Y. Shinohara
 # This is lastly modified 2021/xx/yy by Y. Shinohara
 import sys
+import os
 from modules.constants import pi, fpi, zI, Hartree, Atomvolume
 import numpy as np
 import time
+import ctypes as ct
 
 class GenerateSigmaEpsilon:
     def __init__(self):
@@ -17,10 +19,16 @@ class GenerateSigmaEpsilon:
         self.sum_epsilon = None
         self.sum_epsilon_inv = None
         self.omega_plasma = None #The plasma frequency
-
+#
+        self.ref_ewidth = None
+        self.ref_Nw     = None
+        self.ref_Nk     = None
+        self.ref_Nb     = None
+        self.FL = None
 
     @classmethod
-    def generate(self, ED, Nene = 2000, ewidth = 0.001, plot_option = True, algorithm_option = 'ver1'):
+    def generate(self, ED, Fortlib_option, Nene = 2000, ewidth = 0.001, plot_option = True, algorithm_option = 'ver1'):
+#    def generate(self, ED, Fortlib_option, Nene = 2000, ewidth = 0.001, plot_option = True, algorithm_option = 'org'):
         self.Nene = Nene
         self.ewidth = ewidth
         emax = 1.2*(np.amax(ED.eigval) - np.amin(ED.eigval))
@@ -29,13 +37,21 @@ class GenerateSigmaEpsilon:
         print('# emin, emax =',emin, emax)
         self.sigma = np.zeros([self.Nene, 3, 3], dtype='complex128')
         #
+        print('Fortlib_option', Fortlib_option)
+        if (not Fortlib_option):
+            print('Fortlib_option', Fortlib_option)
+            print('hoge')
+            algorithm_option = algorithm_option + '_fort'
+            self.Prep4Fortlib(self, ED)
         print('# ',algorithm_option, 'is chosen as algorithm_option.')
         if (algorithm_option == 'org'):
-            self._compute_sigma_orginal(self, ED)
+            self._compute_sigma_original(self, ED)
         elif (algorithm_option == 'ver1'):
             self._compute_sigma_ver1(self, ED)
         elif (algorithm_option == 'ver2'):
             self._compute_sigma_ver2(self, ED)
+        if (algorithm_option == 'org_fort'):
+            self._compute_sigma_original_Fortran(self, ED)
         else:
             print('# ERROR: No avilable option for algorithm_option with ', algorithm_option)
             sys.exit()
@@ -109,7 +125,7 @@ class GenerateSigmaEpsilon:
         print('# The sum should be ',0.5*pi*self.omega_plasma**2)
         return self.sum_epsilon, self.sum_epsilon_inv, self.omega_plasma
 
-    def _compute_sigma_orginal(self, ED):
+    def _compute_sigma_original(self, ED):
     #Trivial implementation based on the formula without any trick
         ts = time.time()
         Nevery = int(ED.Nk/10.0)
@@ -181,3 +197,29 @@ class GenerateSigmaEpsilon:
                 for jxyz in range(3):
                     A = ED.pmat[ixyz,:,:,:]*np.transpose(ED.pmat[jxyz,:,:,:], (1,0,2))*weightbk0[:,:,:]/(self.omega[i] + deigvalbk[:,:,:] + zI*self.ewidth)
                     self.sigma[i,ixyz,jxyz] = np.sum(A)
+
+#
+    def Prep4Fortlib(self, ED):
+        self.ref_ewidth = ct.byref(ct.c_double(self.ewidth))
+        self.ref_Nene   = ct.byref(ct.c_int32(self.Nene))
+        self.ref_Nk     = ct.byref(ct.c_int32(ED.Nk))
+        self.ref_Nb     = ct.byref(ct.c_int32(ED.Nb))
+        dir_name = os.path.dirname(os.path.abspath(__file__)).strip('modules')
+        print('# Fortlib.so: ',dir_name+"Fortlib.so")
+        self.FL = np.ctypeslib.load_library(dir_name+"Fortlib.so",".")
+        self.FL.compute_sigma_.argtypes = [
+            np.ctypeslib.ndpointer(dtype='float64'),     #omega
+            np.ctypeslib.ndpointer(dtype='float64'),     #eigval
+            np.ctypeslib.ndpointer(dtype='float64'),     #occ
+            np.ctypeslib.ndpointer(dtype='complex128'),  #pmat
+            ct.POINTER(ct.c_double),                     #ewidth
+            ct.POINTER(ct.c_int32),                      #Nene
+            ct.POINTER(ct.c_int32),                      #Nk
+            ct.POINTER(ct.c_int32),                      #Nb
+            np.ctypeslib.ndpointer(dtype='complex128'),] #sigma
+        self.FL.compute_sigma_.restype = ct.c_void_p
+#
+    def _compute_sigma_original_Fortran(self, ED):
+    #Trivial implementation based on the formula without any trick, with Fortran implementation
+        self.FL.compute_sigma_(self.omega, ED.eigval, ED.occ, ED.pmat, self.ref_ewidth, self.ref_Nene, self.ref_Nk, self.ref_Nb, self.sigma)
+
